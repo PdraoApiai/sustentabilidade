@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoHerói - Jogo de Sustentabilidade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+
+        #game-canvas {
+            background: #87CEEB;
+            border: 5px solid #2E7D32;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: center;
+            z-index: 10;
+            border-radius: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h1 {
+            color: #4CAF50;
+            font-size: 3em;
+            text-shadow: 3px 3px 0 #2E7D32;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: 'Comic Sans MS', cursive;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            background: linear-gradient(45deg, #45a049, #7CB342);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.9);
+            color: #2E7D32;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 20px;
+            font-size: 1.2em;
+            line-height: 1.5;
+        }
+
+        .stats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            z-index: 5;
+        }
+
+        .feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 5;
+            animation: fadeOut 1s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translate(-50%, -100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen" class="screen">
+            <h1>🌍 EcoHerói 🌱</h1>
+            <div class="instructions">
+                <p>Ajude o EcoHerói a salvar o planeta!</p>
+                <p>• Recicle o lixo nos cestos corretos</p>
+                <p>• Desligue as luzes e aparelhos</p>
+                <p>• Feche as torneiras para economizar água</p>
+                <p>Use o mouse para clicar e arrastar os objetos!</p>
+            </div>
+            <button id="start-button">Começar Jogo</button>
+        </div>
+        
+        <div id="end-screen" class="screen hidden">
+            <h1>Parabéns! 🎉</h1>
+            <div class="instructions">
+                <p id="final-score">Sua pontuação: 0</p>
+                <p>Você ajudou a tornar o planeta mais sustentável!</p>
+            </div>
+            <button id="restart-button">Jogar Novamente</button>
+        </div>
+        
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="stats" class="stats hidden">
+            <div>Pontuação: <span id="score">0</span></div>
+            <div>Tempo: <span id="timer">60</span>s</div>
+        </div>
+    </div>
+
+    <script>
+        class EcoHeroGame {
+            constructor() {
+                this.canvas = document.getElementById('game-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.score = 0;
+                this.timer = 60;
+                this.gameInterval = null;
+                
+                this.setupEventListeners();
+                this.initGame();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('start-button').addEventListener('click', () => {
+                    this.startGame();
+                });
+                
+                document.getElementById('restart-button').addEventListener('click', () => {
+                    this.restartGame();
+                });
+            }
+            
+            initGame() {
+                this.draggingItem = null;
+                this.dragOffset = { x: 0, y: 0 };
+                
+                this.setupGameObjects();
+                
+                this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                
+                this.render();
+            }
+            
+            setupGameObjects() {
+                this.trashBins = [
+                    { x: 300, y: 500, width: 80, height: 100, type: 'plastic', color: '#FFEB3B', label: 'Plástico' },
+                    { x: 400, y: 500, width: 80, height: 100, type: 'paper', color: '#2196F3', label: 'Papel' },
+                    { x: 500, y: 500, width: 80, height: 100, type: 'glass', color: '#4CAF50', label: 'Vidro' },
+                    { x: 600, y: 500, width: 80, height: 100, type: 'organic', color: '#795548', label: 'Orgânico' }
+                ];
+                
+                this.trashItems = [
+                    { x: 200, y: 300, radius: 15, type: 'plastic', color: '#FFD700', name: 'Garrafa PET', collected: false },
+                    { x: 250, y: 350, radius: 15, type: 'paper', color: '#4169E1', name: 'Jornal', collected: false },
+                    { x: 300, y: 250, radius: 15, type: 'glass', color: '#32CD32', name: 'Vidro', collected: false },
+                    { x: 350, y: 320, radius: 15, type: 'organic', color: '#8B4513', name: 'Casca Banana', collected: false },
+                    { x: 600, y: 280, radius: 15, type: 'plastic', color: '#FFD700', name: 'Saco', collected: false },
+                    { x: 650, y: 350, radius: 15, type: 'paper', color: '#4169E1', name: 'Caixa', collected: false }
+                ];
+                
+                this.energyObjects = [
+                    { x: 150, y: 350, width: 30, height: 30, type: 'light', color: '#FFD700', state: 'on', name: 'Luz' },
+                    { x: 180, y: 450, width: 40, height: 25, type: 'tv', color: '#333333', state: 'on', name: 'TV' },
+                    { x: 650, y: 200, width: 20, height: 30, type: 'faucet', color: '#2196F3', state: 'on', name: 'Torneira' }
+                ];
+            }
+            
+            startGame() {
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('stats').classList.remove('hidden');
+                
+                this.score = 0;
+                this.timer = 60;
+                this.updateUI();
+                
+                this.setupGameObjects();
+                
+                this.gameInterval = setInterval(() => {
+                    this.render();
+                }, 1000/60);
+                
+                this.timerInterval = setInterval(() => {
+                    this.timer--;
+                    this.updateUI();
+                    
+                    if (this.timer <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+            
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.drawBackground();
+                this.drawTrashBins();
+                this.drawTrashItems();
+                this.drawEnergyObjects();
+            }
+            
+            drawBackground() {
+                this.ctx.fillStyle = '#87CEEB';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.ctx.fillStyle = '#7CFC00';
+                this.ctx.fillRect(0, 450, this.canvas.width, 150);
+                
+                this.ctx.fillStyle = '#FFB74D';
+                this.ctx.fillRect(100, 300, 150, 150);
+                
+                this.ctx.fillStyle = '#D32F2F';
+                this.ctx.beginPath();
+                this.ctx.moveTo(100, 300);
+                this.ctx.lineTo(175, 250);
+                this.ctx.lineTo(250, 300);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                this.ctx.fillStyle = '#8B4513';
+                this.ctx.fillRect(600, 350, 30, 100);
+                this.ctx.fillStyle = '#228B22';
+                this.ctx.beginPath();
+                this.ctx.arc(615, 320, 50, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            drawTrashBins() {
+                this.trashBins.forEach(bin => {
+                    this.ctx.fillStyle = bin.color;
+                    this.ctx.fillRect(bin.x - bin.width/2, bin.y - bin.height/2, bin.width, bin.height);
+                    
+                    this.ctx.fillStyle = '#FFFFFF';
+                    this.ctx.font = '14px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(bin.label, bin.x, bin.y + 60);
+                });
+            }
+            
+            drawTrashItems() {
+                this.trashItems.forEach(item => {
+                    if (!item.collected) {
+                        this.ctx.fillStyle = item.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        this.ctx.fillStyle = '#000000';
+                        this.ctx.font = '10px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(item.name, item.x, item.y + 25);
+                    }
+                });
+            }
+            
+            drawEnergyObjects() {
+                this.energyObjects.forEach(obj => {
+                    this.ctx.fillStyle = obj.state === 'on' ? obj.color : '#666666';
+                    this.ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height/2, obj.width, obj.height);
+                    
+                    this.ctx.fillStyle = '#FFFFFF';
+                    this.ctx.font = '10px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(obj.name, obj.x, obj.y + 25);
+                });
+            }
+            
+            handleMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                for (let item of this.trashItems) {
+                    if (!item.collected && this.isPointInCircle(mouseX, mouseY, item)) {
+                        this.draggingItem = item;
+                        this.dragOffset.x = mouseX - item.x;
+                        this.dragOffset.y = mouseY - item.y;
+                        break;
+                    }
+                }
+                
+                for (let obj of this.energyObjects) {
+                    if (this.isPointInRect(mouseX, mouseY, obj)) {
+                        this.toggleEnergyObject(obj);
+                        break;
+                    }
+                }
+            }
+            
+            handleMouseMove(e) {
+                if (this.draggingItem) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    this.draggingItem.x = mouseX - this.dragOffset.x;
+                    this.draggingItem.y = mouseY - this.dragOffset.y;
+                    this.render();
+                }
+            }
+            
+            handleMouseUp() {
+                if (this.draggingItem) {
+                    this.checkTrashDrop(this.draggingItem);
+                    this.draggingItem = null;
+                    this.render();
+                }
+            }
+            
+            isPointInCircle(x, y, circle) {
+                const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
+                return distance <= circle.radius;
+            }
+            
+            isPointInRect(x, y, rect) {
+                return x >= rect.x - rect.width/2 && 
+                       x <= rect.x + rect.width/2 && 
+                       y >= rect.y - rect.height/2 && 
+                       y <= rect.y + rect.height/2;
+            }
+            
+            checkTrashDrop(item) {
+                for (let bin of this.trashBins) {
+                    if (this.isPointInRect(item.x, item.y, bin)) {
+                        if (item.type === bin.type) {
+                            this.updateScore(10);
+                            this.showFeedback('Correto! +10 pontos', '#00FF00');
+                            item.collected = true;
+                        } else {
+                            this.updateScore(-5);
+                            this.showFeedback('Errado! -5 pontos', '#FF0000');
+                            const originalItem = this.trashItems.find(i => i.name === item.name);
+                            if (originalItem) {
+                                item.x = originalItem.x;
+                                item.y = originalItem.y;
+                            }
+                        }
+                        return;
+                    }
+                }
+                
+                const originalItem = this.trashItems.find(i => i.name === item.name);
+                if (originalItem) {
+                    item.x = originalItem.x;
+                    item.y = originalItem.y;
+                }
+            }
+            
+            toggleEnergyObject(obj) {
+                if (obj.state === 'on') {
+                    obj.state = 'off';
+                    this.updateScore(5);
+                    this.showFeedback('Energia economizada! +5 pontos', '#00FF00');
+                } else {
+                    obj.state = 'on';
+                    this.updateScore(-2);
+                    this.showFeedback('Energia desperdiçada! -2 pontos', '#FF0000');
+                }
+                this.render();
+            }
+            
+            updateScore(points) {
+                this.score += points;
+                if (this.score < 0) this.score = 0;
+                this.updateUI();
+            }
+            
+            updateUI() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('timer').textContent = this.timer;
+            }
+            
+            showFeedback(text, color) {
+                const feedback = document.createElement('div');
+                feedback.className = 'feedback';
+                feedback.textContent = text;
+                feedback.style.color = color;
+                
+                document.getElementById('game-container').appendChild(feedback);
+                
+                setTimeout(() => {
+                    feedback.remove();
+                }, 1000);
+            }
+            
+            endGame() {
+                clearInterval(this.gameInterval);
+                clearInterval(this.timerInterval);
+                
+                document.getElementById('final-score').textContent = 'Sua pontuação: ' + this.score;
+                document.getElementById('end-screen').classList.remove('hidden');
+                document.getElementById('stats').classList.add('hidden');
+            }
+            
+            restartGame() {
+                clearInterval(this.gameInterval);
+                clearInterval(this.timerInterval);
+                
+                document.getElementById('end-screen').classList.add('hidden');
+                this.startGame();
+            }
+        }
+        
+        window.addEventListener('load', () => {
+            new EcoHeroGame();
+        });
+    </script>
+</body>
+</html>
