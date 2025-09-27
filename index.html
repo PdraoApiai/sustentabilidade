@@ -4,7 +4,253 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoCity - Simulador de Sustentabilidade</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 1200px;
+            height: 800px;
+            background: #2c3e50;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            position: relative;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 200;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .hidden { display: none; }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-large {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 15px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-large:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Painel Lateral */
+        .side-panel {
+            background: #34495e;
+            padding: 15px;
+            color: white;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stats-section {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #2c3e50;
+            border-radius: 3px;
+            margin: 3px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .money-bar { background: linear-gradient(90deg, #3498db, #2980b9); }
+        .energy-bar { background: linear-gradient(90deg, #f39c12, #f1c40f); }
+        .recycle-bar { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+        .happiness-bar { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+        .pollution-bar { background: linear-gradient(90deg, #95a5a6, #7f8c8d); }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            background: linear-gradient(45deg, #2980b9, #3498db);
+        }
+
+        .control-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .mission-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 6px;
+            margin: 5px 0;
+            border-left: 3px solid #e74c3c;
+            font-size: 12px;
+        }
+
+        .mission-completed {
+            border-left-color: #27ae60;
+            opacity: 0.8;
+        }
+
+        /* Área do Jogo */
+        .game-area {
+            background: linear-gradient(180deg, #87CEEB 70%, #27ae60 30%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .building {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .building:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .building-icon {
+            font-size: 32px;
+            margin-bottom: 3px;
+        }
+
+        .building-info {
+            background: rgba(0,0,0,0.7);
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        .building-upgraded {
+            animation: glow 0.8s ease-out;
+        }
+
+        @keyframes glow {
+            0% { filter: drop-shadow(0 0 0px #fff); }
+            50% { filter: drop-shadow(0 0 10px #fff); }
+            100% { filter: drop-shadow(0 0 0px #fff); }
+        }
+
+        .notification {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 100;
+            animation: slideDown 0.5s ease;
+            font-size: 14px;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -50px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .cost-badge {
+            background: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        .resource-change {
+            position: absolute;
+            font-weight: bold;
+            animation: floatUp 1s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-30px); opacity: 0; }
+        }
+    </style>
 </head>
 <body>
     <div id="game-container">
@@ -12,43 +258,55 @@
             <h1>🌍 EcoCity Simulator</h1>
             <div style="max-width: 600px; margin: 20px 0;">
                 <h2>Transforme sua cidade em um modelo de sustentabilidade!</h2>
-                <p>Gerencie recursos, implemente tecnologias verdes e tome decisões estratégicas para criar uma cidade ecologicamente correta.</p>
+                <p>Balanceie desenvolvimento urbano com preservação ambiental. Tome decisões estratégicas para criar uma cidade ecologicamente correta.</p>
+                <p style="margin-top: 15px; color: #f39c12;"><strong>Dica:</strong> Mantenha a felicidade acima de 50% e a poluição abaixo de 60%!</p>
             </div>
-            <button class="btn-large" onclick="game.start()">🚀 Iniciar Missão</button>
+            <button class="btn-large" id="start-button">🚀 Iniciar Missão</button>
         </div>
 
         <div class="side-panel">
             <div class="stats-section">
-                <h3>📊 Estatísticas da Cidade</h3>
+                <h3>📊 Estatísticas</h3>
                 <div class="stat-item"><span>Pontuação:</span><span id="score">0</span></div>
-                <div class="stat-item"><span>Nível:</span><span id="level">1</span></div>
                 <div class="stat-item"><span>Dia:</span><span id="day">1</span></div>
+                <div class="stat-item"><span>População:</span><span id="population">1,000</span></div>
                 
-                <div class="stat-item"><span>💰 Orçamento:</span><span id="money">$10,000</span></div>
+                <div class="stat-item">
+                    <span>💰 Orçamento:</span>
+                    <span id="money">$10,000</span>
+                </div>
                 <div class="progress-bar"><div class="progress-fill money-bar" id="money-bar"></div></div>
                 
                 <div class="stat-item"><span>💡 Energia:</span><span id="energy">100%</span></div>
                 <div class="progress-bar"><div class="progress-fill energy-bar" id="energy-bar"></div></div>
 
-                <div class="stat-item"><span>♻️ Reciclagem:</span><span id="recycling">0%</span></div>
+                <div class="stat-item"><span>♻️ Reciclagem:</span><span id="recycling">50%</span></div>
                 <div class="progress-bar"><div class="progress-fill recycle-bar" id="recycling-bar"></div></div>
 
-                <div class="stat-item"><span>😊 Felicidade:</span><span id="happiness">70%</span></div>
+                <div class="stat-item"><span>😊 Felicidade:</span><span id="happiness">60%</span></div>
                 <div class="progress-bar"><div class="progress-fill happiness-bar" id="happiness-bar"></div></div>
 
-                <div class="stat-item"><span>💨 Poluição:</span><span id="pollution">20%</span></div>
+                <div class="stat-item"><span>💨 Poluição:</span><span id="pollution">30%</span></div>
                 <div class="progress-bar"><div class="progress-fill pollution-bar" id="pollution-bar"></div></div>
             </div>
 
             <div class="controls">
-                <button class="control-btn" id="upgrade-all">⚡ Melhorar Tudo</button>
-                <button class="control-btn" id="collect-taxes">💵 Coletar Impostos</button>
-                <button class="control-btn" id="launch-campaign">📢 Campanha</button>
-                <button class="control-btn" id="build-park">🌳 Novo Parque</button>
+                <button class="control-btn" id="upgrade-all-btn" title="Melhora todas as construções em 1 nível">
+                    ⚡ Melhorar Tudo <span class="cost-badge">$2,000</span>
+                </button>
+                <button class="control-btn" id="collect-taxes-btn" title="Coleta impostos da população">
+                    💵 Coletar Impostos
+                </button>
+                <button class="control-btn" id="launch-campaign-btn" title="Campanha de conscientização ambiental">
+                    📢 Campanha Verde <span class="cost-badge">$1,000</span>
+                </button>
+                <button class="control-btn" id="build-park-btn" title="Construir novo parque urbano">
+                    🌳 Novo Parque <span class="cost-badge">$3,000</span>
+                </button>
             </div>
 
             <div class="stats-section">
-                <h3>📋 Missões Ativas</h3>
+                <h3>📋 Missões</h3>
                 <div id="missions-list"></div>
             </div>
         </div>
@@ -56,15 +314,573 @@
         <div class="game-area" id="game-area"></div>
 
         <div id="end-screen" class="screen hidden">
-            <h1>🎉 Missão Concluída!</h1>
+            <h1 id="end-title">🎉 Missão Concluída!</h1>
             <div style="max-width: 600px;">
-                <h2>Relatório Final da Gestão</h2>
-                <div id="final-stats"></div>
+                <h2 id="end-subtitle">Relatório Final</h2>
+                <div id="final-stats" style="text-align: left; margin: 20px 0;"></div>
             </div>
-            <button class="btn-large" onclick="game.restart()">🔄 Jogar Novamente</button>
+            <button class="btn-large" id="restart-button">🔄 Jogar Novamente</button>
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <script>
+        class EcoCityGame {
+            constructor() {
+                this.config = {
+                    costs: {
+                        upgradeBuilding: 500,
+                        upgradeAll: 2000,
+                        launchCampaign: 1000,
+                        buildPark: 3000,
+                    },
+                    rewards: {
+                        taxPerPopulation: 5,
+                    },
+                    gameLoopInterval: 3000,
+                    randomEventChance: 0.2,
+                    maxDays: 50
+                };
+                
+                this.state = {};
+                this.dom = {};
+                this.gameInterval = null;
+                
+                // Aguardar o DOM carregar antes de inicializar
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => this.init());
+                } else {
+                    this.init();
+                }
+            }
+
+            init() {
+                this.cacheDomElements();
+                this.bindEventListeners();
+                this.resetState();
+            }
+
+            cacheDomElements() {
+                // Cache all DOM elements
+                this.dom = {
+                    score: document.getElementById('score'),
+                    day: document.getElementById('day'),
+                    money: document.getElementById('money'),
+                    energy: document.getElementById('energy'),
+                    recycling: document.getElementById('recycling'),
+                    happiness: document.getElementById('happiness'),
+                    pollution: document.getElementById('pollution'),
+                    population: document.getElementById('population'),
+                    missionsList: document.getElementById('missions-list'),
+                    gameArea: document.getElementById('game-area'),
+                    startScreen: document.getElementById('start-screen'),
+                    endScreen: document.getElementById('end-screen'),
+                    finalStats: document.getElementById('final-stats'),
+                    startButton: document.getElementById('start-button'),
+                    restartButton: document.getElementById('restart-button'),
+                    upgradeAllBtn: document.getElementById('upgrade-all-btn'),
+                    collectTaxesBtn: document.getElementById('collect-taxes-btn'),
+                    launchCampaignBtn: document.getElementById('launch-campaign-btn'),
+                    buildParkBtn: document.getElementById('build-park-btn'),
+                    moneyBar: document.getElementById('money-bar'),
+                    energyBar: document.getElementById('energy-bar'),
+                    recyclingBar: document.getElementById('recycling-bar'),
+                    happinessBar: document.getElementById('happiness-bar'),
+                    pollutionBar: document.getElementById('pollution-bar')
+                };
+            }
+
+            bindEventListeners() {
+                // CORREÇÃO: Usar arrow functions para manter o contexto do 'this'
+                this.dom.startButton.addEventListener('click', () => this.start());
+                this.dom.restartButton.addEventListener('click', () => this.restart());
+                this.dom.upgradeAllBtn.addEventListener('click', () => this.upgradeAll());
+                this.dom.collectTaxesBtn.addEventListener('click', () => this.collectTaxes());
+                this.dom.launchCampaignBtn.addEventListener('click', () => this.launchCampaign());
+                this.dom.buildParkBtn.addEventListener('click', () => this.buildPark());
+            }
+
+            resetState() {
+                this.state = {
+                    score: 0,
+                    day: 1,
+                    money: 10000,
+                    energy: 100,
+                    recycling: 50,
+                    population: 1000,
+                    happiness: 60,
+                    pollution: 30,
+                    buildings: [],
+                    missions: [],
+                    completedMissions: 0,
+                    gameOver: false
+                };
+
+                this.setupMissions();
+                this.setupBuildings();
+                this.updateUI(); // Atualizar UI inicial
+            }
+
+            setupMissions() {
+                this.state.missions = [
+                    { 
+                        id: 1, 
+                        title: "Reduzir Poluição", 
+                        description: "Baixe a poluição para menos de 20%",
+                        target: { pollution: 20 },
+                        reward: 500,
+                        completed: false
+                    },
+                    { 
+                        id: 2, 
+                        title: "Aumentar Felicidade", 
+                        description: "Aumente a felicidade para mais de 80%",
+                        target: { happiness: 80 },
+                        reward: 500,
+                        completed: false
+                    },
+                    { 
+                        id: 3, 
+                        title: "Expansão Urbana", 
+                        description: "Atinja 5 construções na cidade",
+                        target: { buildings: 5 },
+                        reward: 800,
+                        completed: false
+                    },
+                    { 
+                        id: 4, 
+                        title: "Sustentabilidade", 
+                        description: "Mantenha energia acima de 70% por 10 dias",
+                        target: { energyStreak: 10 },
+                        reward: 1000,
+                        completed: false,
+                        progress: 0
+                    }
+                ];
+            }
+
+            setupBuildings() {
+                this.state.buildings = [
+                    { 
+                        id: 1, type: 'house', name: 'Residencial', 
+                        x: 200, y: 400, level: 1, 
+                        stats: { energy: -2, pollution: 1, happiness: 2, population: 100 },
+                        upgradeCost: 500
+                    },
+                    { 
+                        id: 2, type: 'factory', name: 'Fábrica Verde', 
+                        x: 400, y: 300, level: 1, 
+                        stats: { energy: -5, pollution: 3, happiness: -1, money: 200 },
+                        upgradeCost: 800
+                    },
+                    { 
+                        id: 3, type: 'solar', name: 'Usina Solar', 
+                        x: 600, y: 400, level: 1, 
+                        stats: { energy: 10, pollution: -2, happiness: 1 },
+                        upgradeCost: 1200
+                    }
+                ];
+            }
+
+            start() {
+                console.log('🚀 Iniciando jogo...'); // Debug
+                this.dom.startScreen.classList.add('hidden');
+                this.renderBuildings();
+                this.renderMissions();
+                this.updateUI();
+                this.startGameLoop();
+            }
+
+            renderBuildings() {
+                this.dom.gameArea.innerHTML = '';
+                
+                this.state.buildings.forEach(building => {
+                    const el = document.createElement('div');
+                    el.className = 'building';
+                    el.style.left = `${building.x}px`;
+                    el.style.top = `${building.y}px`;
+                    el.dataset.id = building.id;
+
+                    const iconMap = {
+                        house: '🏠', factory: '🏭', solar: '☀️', 
+                        park: '🌳', recycle: '♻️', school: '🏫'
+                    };
+
+                    el.innerHTML = `
+                        <div class="building-icon">${iconMap[building.type] || '🏢'}</div>
+                        <div class="building-info">
+                            ${building.name}<br>
+                            Nv. ${building.level} | $${building.upgradeCost}
+                        </div>
+                    `;
+
+                    el.addEventListener('click', () => this.upgradeBuilding(building));
+                    this.dom.gameArea.appendChild(el);
+                });
+            }
+
+            upgradeBuilding(building) {
+                if (this.state.money >= building.upgradeCost) {
+                    this.state.money -= building.upgradeCost;
+                    building.level++;
+                    building.upgradeCost = Math.floor(building.upgradeCost * 1.5);
+                    
+                    // Melhora os stats em 20% por nível
+                    Object.keys(building.stats).forEach(stat => {
+                        if (building.stats[stat] > 0) {
+                            building.stats[stat] = Math.floor(building.stats[stat] * 1.2);
+                        } else {
+                            building.stats[stat] = Math.floor(building.stats[stat] * 0.8);
+                        }
+                    });
+
+                    this.state.score += 100;
+                    this.showNotification(`⚡ ${building.name} melhorado para nível ${building.level}!`);
+                    this.showResourceChange(-building.upgradeCost, building.x, building.y);
+                    
+                    this.renderBuildings();
+                    this.updateUI();
+                    this.checkMissions();
+                } else {
+                    this.showNotification('❌ Orçamento insuficiente!');
+                }
+            }
+
+            upgradeAll() {
+                const cost = this.config.costs.upgradeAll;
+                if (this.state.money >= cost) {
+                    this.state.buildings.forEach(building => {
+                        building.level++;
+                        building.upgradeCost = Math.floor(building.upgradeCost * 1.3);
+                    });
+                    
+                    this.state.money -= cost;
+                    this.state.score += 300;
+                    this.showNotification('🎉 Todas as construções melhoradas!');
+                    this.showResourceChange(-cost, 600, 300);
+                    
+                    this.renderBuildings();
+                    this.updateUI();
+                } else {
+                    this.showNotification('❌ Orçamento insuficiente!');
+                }
+            }
+
+            collectTaxes() {
+                const taxes = this.state.population * this.config.rewards.taxPerPopulation;
+                this.state.money += taxes;
+                this.state.score += 50;
+                this.showNotification(`💵 Impostos coletados: +$${taxes.toLocaleString()}`);
+                this.showResourceChange(taxes, 100, 100);
+                this.updateUI();
+            }
+
+            launchCampaign() {
+                const cost = this.config.costs.launchCampaign;
+                if (this.state.money >= cost) {
+                    this.state.money -= cost;
+                    this.state.recycling = Math.min(100, this.state.recycling + 15);
+                    this.state.happiness = Math.min(100, this.state.happiness + 10);
+                    this.state.score += 100;
+                    this.showNotification('📢 Campanha de conscientização lançada!');
+                    this.showResourceChange(-cost, 100, 100);
+                    this.updateUI();
+                } else {
+                    this.showNotification('❌ Orçamento insuficiente!');
+                }
+            }
+
+            buildPark() {
+                const cost = this.config.costs.buildPark;
+                if (this.state.money >= cost) {
+                    this.state.money -= cost;
+                    
+                    const newBuilding = {
+                        id: this.state.buildings.length + 1,
+                        type: 'park',
+                        name: 'Parque Municipal',
+                        x: Math.random() * 600 + 100,
+                        y: Math.random() * 300 + 100,
+                        level: 1,
+                        stats: { pollution: -5, happiness: 8, energy: -1 },
+                        upgradeCost: 1500
+                    };
+                    
+                    this.state.buildings.push(newBuilding);
+                    this.state.score += 200;
+                    this.showNotification('🌳 Novo parque construído!');
+                    this.showResourceChange(-cost, newBuilding.x, newBuilding.y);
+                    
+                    this.renderBuildings();
+                    this.updateUI();
+                    this.checkMissions();
+                } else {
+                    this.showNotification('❌ Orçamento insuficiente!');
+                }
+            }
+
+            dailyUpdate() {
+                if (this.state.gameOver) return;
+
+                this.state.day++;
+                
+                // Calcular efeitos das construções
+                let dailyEffects = { energy: 0, pollution: 0, happiness: 0, money: 0, population: 0 };
+                
+                this.state.buildings.forEach(building => {
+                    Object.keys(building.stats).forEach(stat => {
+                        dailyEffects[stat] += building.stats[stat];
+                    });
+                });
+
+                // Aplicar efeitos com balanceamento
+                this.state.energy = Math.max(0, Math.min(100, this.state.energy + dailyEffects.energy / 2));
+                this.state.pollution = Math.max(0, Math.min(100, this.state.pollution + dailyEffects.pollution / 3));
+                this.state.happiness = Math.max(0, Math.min(100, this.state.happiness + dailyEffects.happiness / 4));
+                this.state.money += dailyEffects.money;
+                this.state.population = Math.max(100, this.state.population + dailyEffects.population);
+
+                // Efeitos ambientais
+                if (this.state.pollution > 70) {
+                    this.state.happiness -= 5;
+                    this.state.energy -= 3;
+                }
+
+                if (this.state.recycling > 80) {
+                    this.state.pollution -= 2;
+                    this.state.happiness += 2;
+                }
+
+                // Crescimento populacional baseado na felicidade
+                if (this.state.happiness > 70) {
+                    this.state.population += Math.floor(this.state.population * 0.02);
+                } else if (this.state.happiness < 40) {
+                    this.state.population -= Math.floor(this.state.population * 0.01);
+                }
+
+                // Evento aleatório
+                if (Math.random() < this.config.randomEventChance) {
+                    this.handleRandomEvent();
+                }
+
+                // Verificar missões
+                this.checkMissions();
+
+                // Verificar fim de jogo
+                this.checkGameEnd();
+
+                this.updateUI();
+            }
+
+            handleRandomEvent() {
+                const events = [
+                    {
+                        text: '☀️ Onda de calor! Consumo de energia aumentou.',
+                        effect: () => { 
+                            this.state.energy -= 15;
+                            this.showResourceChange(-15, 600, 200, 'energy');
+                        }
+                    },
+                    {
+                        text: '💡 Descoberta tecnológica! Eficiência energética melhorada.',
+                        effect: () => { 
+                            this.state.energy += 20;
+                            this.showResourceChange(20, 600, 200, 'energy');
+                        }
+                    },
+                    {
+                        text: '🏭 Indústria poluente foi multada!',
+                        effect: () => { 
+                            this.state.money += 1000;
+                            this.state.pollution -= 10;
+                            this.showResourceChange(1000, 400, 300);
+                        }
+                    },
+                    {
+                        text: '🎉 Festival cultural na cidade!',
+                        effect: () => { 
+                            this.state.happiness += 15;
+                            this.state.money -= 500;
+                            this.showResourceChange(15, 300, 400, 'happiness');
+                        }
+                    }
+                ];
+
+                const event = events[Math.floor(Math.random() * events.length)];
+                this.showNotification(`📢 Evento: ${event.text}`);
+                event.effect();
+            }
+
+            checkMissions() {
+                this.state.missions.forEach(mission => {
+                    if (mission.completed) return;
+
+                    let completed = false;
+
+                    if (mission.target.pollution !== undefined) {
+                        completed = this.state.pollution <= mission.target.pollution;
+                    } else if (mission.target.happiness !== undefined) {
+                        completed = this.state.happiness >= mission.target.happiness;
+                    } else if (mission.target.buildings !== undefined) {
+                        completed = this.state.buildings.length >= mission.target.buildings;
+                    } else if (mission.target.energyStreak !== undefined) {
+                        if (this.state.energy >= 70) {
+                            mission.progress = (mission.progress || 0) + 1;
+                        } else {
+                            mission.progress = 0;
+                        }
+                        completed = mission.progress >= mission.target.energyStreak;
+                    }
+
+                    if (completed) {
+                        mission.completed = true;
+                        this.state.completedMissions++;
+                        this.state.money += mission.reward;
+                        this.state.score += mission.reward;
+                        this.showNotification(`🎯 Missão concluída: ${mission.title} +$${mission.reward}`);
+                    }
+                });
+
+                this.renderMissions();
+            }
+
+            renderMissions() {
+                this.dom.missionsList.innerHTML = '';
+                
+                this.state.missions.forEach(mission => {
+                    const missionEl = document.createElement('div');
+                    missionEl.className = `mission-item ${mission.completed ? 'mission-completed' : ''}`;
+                    
+                    let progress = '';
+                    if (mission.target.energyStreak) {
+                        progress = ` (${mission.progress || 0}/${mission.target.energyStreak})`;
+                    }
+                    
+                    missionEl.innerHTML = `
+                        <strong>${mission.title}</strong><br>
+                        <small>${mission.description}${progress}</small>
+                        ${mission.completed ? ' ✅' : ''}
+                    `;
+                    
+                    this.dom.missionsList.appendChild(missionEl);
+                });
+            }
+
+            checkGameEnd() {
+                const conditions = [
+                    { check: () => this.state.day >= this.config.maxDays, message: 'Tempo esgotado! 50 dias se passaram.' },
+                    { check: () => this.state.energy <= 0, message: 'Falta de energia! A cidade entrou em colapso.' },
+                    { check: () => this.state.pollution >= 90, message: 'Poluição crítica! A cidade se tornou inabitável.' },
+                    { check: () => this.state.happiness <= 10, message: 'Revolta popular! Você foi deposto.' },
+                    { check: () => this.state.completedMissions >= 3, message: 'Vitória! Você transformou a cidade em modelo sustentável!' }
+                ];
+
+                const endCondition = conditions.find(condition => condition.check());
+                
+                if (endCondition) {
+                    this.endGame(endCondition.message);
+                }
+            }
+
+            endGame(message) {
+                this.state.gameOver = true;
+                clearInterval(this.gameInterval);
+
+                const title = message.includes('Vitória') ? '🎉 Missão Concluída!' : '💀 Fim de Jogo';
+                const subtitle = message;
+
+                this.dom.endScreen.querySelector('#end-title').textContent = title;
+                this.dom.endScreen.querySelector('#end-subtitle').textContent = subtitle;
+
+                const finalStats = `
+                    <div class="stat-item"><span>Pontuação Final:</span><span>${this.state.score}</span></div>
+                    <div class="stat-item"><span>Dias Sobrevividos:</span><span>${this.state.day}</span></div>
+                    <div class="stat-item"><span>Missões Concluídas:</span><span>${this.state.completedMissions}/4</span></div>
+                    <div class="stat-item"><span>Construções:</span><span>${this.state.buildings.length}</span></div>
+                    <div class="stat-item"><span>População Final:</span><span>${this.state.population.toLocaleString()}</span></div>
+                    <div class="stat-item"><span>Orçamento Final:</span><span>$${this.state.money.toLocaleString()}</span></div>
+                `;
+
+                this.dom.finalStats.innerHTML = finalStats;
+                this.dom.endScreen.classList.remove('hidden');
+            }
+
+            showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                this.dom.gameArea.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+
+            showResourceChange(amount, x, y, type = 'money') {
+                const changeEl = document.createElement('div');
+                changeEl.className = 'resource-change';
+                changeEl.textContent = `${amount >= 0 ? '+' : ''}${amount}`;
+                changeEl.style.color = amount >= 0 ? '#2ecc71' : '#e74c3c';
+                changeEl.style.left = `${x}px`;
+                changeEl.style.top = `${y}px`;
+                
+                if (type !== 'money') {
+                    changeEl.textContent += type === 'energy' ? '⚡' : type === 'happiness' ? '😊' : '';
+                } else {
+                    changeEl.textContent = `$${amount >= 0 ? '+' : ''}${Math.abs(amount)}`;
+                }
+
+                this.dom.gameArea.appendChild(changeEl);
+                setTimeout(() => changeEl.remove(), 1000);
+            }
+
+            updateUI() {
+                // Atualizar estatísticas
+                this.dom.score.textContent = this.state.score;
+                this.dom.day.textContent = this.state.day;
+                this.dom.money.textContent = `$${this.state.money.toLocaleString()}`;
+                this.dom.energy.textContent = `${Math.round(this.state.energy)}%`;
+                this.dom.recycling.textContent = `${Math.round(this.state.recycling)}%`;
+                this.dom.happiness.textContent = `${Math.round(this.state.happiness)}%`;
+                this.dom.pollution.textContent = `${Math.round(this.state.pollution)}%`;
+                this.dom.population.textContent = this.state.population.toLocaleString();
+
+                // Atualizar barras de progresso
+                this.dom.moneyBar.style.width = `${Math.min(100, (this.state.money / 50000) * 100)}%`;
+                this.dom.energyBar.style.width = `${this.state.energy}%`;
+                this.dom.recyclingBar.style.width = `${this.state.recycling}%`;
+                this.dom.happinessBar.style.width = `${this.state.happiness}%`;
+                this.dom.pollutionBar.style.width = `${this.state.pollution}%`;
+
+                // Atualizar cores baseadas nos valores
+                this.dom.happinessBar.style.background = this.state.happiness < 50 ? 
+                    'linear-gradient(90deg, #e74c3c, #c0392b)' : 
+                    'linear-gradient(90deg, #2ecc71, #27ae60)';
+
+                this.dom.pollutionBar.style.background = this.state.pollution > 70 ?
+                    'linear-gradient(90deg, #e74c3c, #c0392b)' :
+                    'linear-gradient(90deg, #95a5a6, #7f8c8d)';
+
+                // Atualizar estados dos botões
+                this.dom.upgradeAllBtn.disabled = this.state.money < this.config.costs.upgradeAll;
+                this.dom.launchCampaignBtn.disabled = this.state.money < this.config.costs.launchCampaign;
+                this.dom.buildParkBtn.disabled = this.state.money < this.config.costs.buildPark;
+            }
+
+            startGameLoop() {
+                clearInterval(this.gameInterval);
+                this.gameInterval = setInterval(() => this.dailyUpdate(), this.config.gameLoopInterval);
+            }
+
+            restart() {
+                this.resetState();
+                this.dom.endScreen.classList.add('hidden');
+                this.dom.startScreen.classList.remove('hidden');
+            }
+        }
+
+        // CORREÇÃO: Inicializar o jogo apenas quando a página carregar
+        let game;
+        document.addEventListener('DOMContentLoaded', function() {
+            game = new EcoCityGame();
+            console.log('🎮 EcoCity Game carregado e pronto!');
+        });
+    </script>
 </body>
 </html>
